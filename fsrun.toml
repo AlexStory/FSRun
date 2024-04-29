@@ -9,7 +9,6 @@ build-project = ["clean", "build"]
 publish = "dotnet publish -r win-x64 -p:PublishSingleFile=true --self-contained true"
 publish-linux = "dotnet publish -r linux-x64 -p:PublishSingleFile=true --self-contained true"
 publish-mac = "dotnet publish -r osx-x64 -p:PublishSingleFile=true --self-contained true"
-combo = "echo hello && echo world"
 
 [commands.build]
 command = "dotnet"

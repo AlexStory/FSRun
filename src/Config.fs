@@ -49,8 +49,30 @@ let parseSimpleCommand (cmdLine: string) name =
     { Name = name; Action = Command (parts.[0], (parts.[1..] |> Array.toList)) }
 
 
+let rec findFile filePath =
+    if File.Exists(filePath) then
+        Some filePath
+    else
+        let parentDirectory = Directory.GetParent(filePath)
+        if parentDirectory <> null then
+            let grandParentDirectory = parentDirectory.Parent
+            if grandParentDirectory <> null then
+                findFile (Path.Combine(grandParentDirectory.FullName, Path.GetFileName(filePath)))
+            else
+                None
+        else
+            None
+
+
 let fromFile filePath : FSConfig =
-    let file = File.ReadAllText(filePath)
+    let file =
+        findFile filePath
+        |> Option.defaultWith(fun() ->
+            printfn $"File not found: {filePath}"
+            System.Environment.Exit 1
+            failwith "unreachable"
+        )
+    let file = File.ReadAllText file
     let configInterop = Toml.ToModel(file)
     let tomlEnv: IDictionary<string, obj> = configInterop["environment"] :?> IDictionary<string, obj>
     let tomlCommands = configInterop["commands"] :?> Model.TomlTable

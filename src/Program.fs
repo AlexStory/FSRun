@@ -4,14 +4,12 @@ open FSRun
 open System.IO
 
 
-
-
-
 type CliCommand =
     | [<MainCommand; Unique>] Name of string
     | [<AltCommandLine("-q")>] Quiet
     | List
     | Logs of path: string
+    | [<AltCommandLine("-f")>] File of path: string
 
     interface IArgParserTemplate with
         member s.Usage =
@@ -20,8 +18,10 @@ type CliCommand =
             | Quiet -> $"Don't print command's output"
             | List -> $"List all commands"
             | Logs path -> $"Log output to a file at the given path"
+            | File path -> $"Path to the configuration file (default: fsrun.toml)"
 
 
+// The action to take based on the command line arguments
 type Action =
     | PrintUsage
     | ListCommands
@@ -32,13 +32,15 @@ type Settings = {
     Quiet: bool
     LogPath: string option
     Command: string option
+    FileName: string
 }
 
 let parseSettings (results: ParseResults<CliCommand>) =
     let quiet = results.Contains Quiet
     let logPath = results.TryGetResult(Logs)
     let command = results.TryGetResult(Name)
-    { Quiet = quiet; LogPath = logPath; Command = command}
+    let fileName = results.GetResult(File, "fsrun.toml")
+    { Quiet = quiet; LogPath = logPath; Command = command; FileName = fileName}
 
 
 let getAction (results: ParseResults<CliCommand>)  =
@@ -51,6 +53,14 @@ let getAction (results: ParseResults<CliCommand>)  =
     else
         PrintUsage
 
+let writeLog filePath text =
+    if not (File.Exists(filePath)) then
+        File.WriteAllText(filePath, text)
+    else
+        File.AppendAllText(filePath, text)
+
+    File.AppendAllText(filePath, "\n")
+
 
 let rec runCommand (name: string) (config: Config.FSConfig) settings =
     match List.tryFind (fun (cmd: Config.FSCommand) -> cmd.Name = name) config.Commands with
@@ -61,6 +71,7 @@ let rec runCommand (name: string) (config: Config.FSConfig) settings =
             |> List.map (fun step -> runCommand step config settings)
             |> List.fold (fun acc code -> if acc = 0 then code else acc) 0
         | Config.CommandAction.Command (cmd, args) ->
+            printfn $"""Running command: {cmd} {String.concat " " args}"""
             let result =
                 cli {
                     Exec cmd
@@ -71,7 +82,7 @@ let rec runCommand (name: string) (config: Config.FSConfig) settings =
             if not (settings.Quiet) then
                 result |> Output.printText
             if settings.LogPath.IsSome then
-                File.WriteAllText(settings.LogPath.Value, result.Text.Value)
+                writeLog settings.LogPath.Value result.Text.Value
             result |> Output.toExitCode
     | None ->
         printf $"Command '{name}' not found\n"
@@ -97,7 +108,7 @@ let parser = ArgumentParser.Create<CliCommand>(programName="fsrun")
 [<EntryPoint>]
 let main argv =
     let results = parser.ParseCommandLine(argv, raiseOnUsage=false)
-    let config = Config.fromFile "fsrun.toml"
-    let action = getAction results
     let settings = parseSettings results
+    let config = Config.fromFile settings.FileName
+    let action = getAction results
     performAction action config parser settings
