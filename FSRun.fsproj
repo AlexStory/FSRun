@@ -2,12 +2,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
     <AssemblyName>fsrun</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>fsrun</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src/Config.fs" />
     <Compile Include="src/Program.fs" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
   <Import Project=".paket\Paket.Restore.targets" />
 </Project>
