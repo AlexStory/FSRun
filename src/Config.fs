@@ -74,8 +74,8 @@ let fromFile filePath : FSConfig =
         )
     let file = File.ReadAllText file
     let configInterop = Toml.ToModel(file)
-    let tomlEnv: IDictionary<string, obj> = configInterop["environment"] :?> IDictionary<string, obj>
-    let tomlCommands = configInterop["commands"] :?> Model.TomlTable
+    let tomlEnv: IDictionary<string, obj> =  if configInterop.ContainsKey("environment") then configInterop["environment"] :?> IDictionary<string, obj> else new Dictionary<string, obj>()
+    let tomlCommands = if configInterop.ContainsKey("commands") then configInterop["commands"] :?> Model.TomlTable else new Model.TomlTable()
     let env = tomlEnv |> Seq.map (fun kvp -> kvp.Key, kvp.Value |> string) |> Map.ofSeq
     let commands =
         tomlCommands |> Seq.map (fun kvp -> 
