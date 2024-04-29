@@ -4,7 +4,9 @@ FSRun is a language agnostic task runner. I often miss the ease of use of being 
 
 ## Getting started
 
-It's not yet shipped as a .net tool or on package managers, so it needs to be built from source, if you clone the repo, you can do `dotnet run publish[-platform]`. Then can copy the executable to your path.
+The easiest way to install right now is to add it as a .net tool `dotnet tool install --global fsrun`
+
+You can also clone the repo from source, then you can do `dotnet run publish[-platform]`. Then can copy the executable to your path.
 
 To use it make a config file. (fsrun.toml is the default, but you can change the name)
 
@@ -67,3 +69,7 @@ Will write all output logs to the specified file in append mode. Will create the
 ### --file, -f \<filename>
 
 Name of the file to run for config instead of `fsrun.toml`. Will look upwards recursively through directories attempting to find the file. Can be useful if you want to have different config files for different environments in the same project.
+
+### --quiet
+
+Silence output from run commands in the terminal

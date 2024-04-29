@@ -81,8 +81,13 @@ let rec runCommand (name: string) (config: Config.FSConfig) settings =
                 |> Command.execute
             if not (settings.Quiet) then
                 result |> Output.printText
-            if settings.LogPath.IsSome then
+                result |> Output.printError
+
+            if settings.LogPath.IsSome && result.Text.IsSome then
                 writeLog settings.LogPath.Value result.Text.Value
+            if settings.LogPath.IsSome && result.Error.IsSome then
+                writeLog settings.LogPath.Value result.Error.Value
+            
             result |> Output.toExitCode
     | None ->
         printf $"Command '{name}' not found\n"
