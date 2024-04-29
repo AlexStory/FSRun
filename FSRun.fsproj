@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>fsrun</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src/Config.fs" />
