@@ -1,0 +1,18 @@
+[[commands]]
+name = "greet"
+command = "echo"
+args = ["Hello, World!"]
+
+[[commands]]
+name = "clean"
+command = "dotnet"
+args = ["clean"]
+
+[[commands]]
+name = "build"
+command = "dotnet"
+args = ["build"]
+
+[[commands]]
+name = "build-project"
+steps = ["clean", "build"]
