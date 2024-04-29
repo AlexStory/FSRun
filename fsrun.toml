@@ -1,3 +1,7 @@
+[environment]
+env = "development"
+version = "0.0.1"
+
 [[commands]]
 name = "greet"
 command = "echo"
@@ -16,3 +20,8 @@ args = ["build"]
 [[commands]]
 name = "build-project"
 steps = ["clean", "build"]
+
+[[commands]]
+name = "env"
+command = "echo"
+args = ["%env%"]
