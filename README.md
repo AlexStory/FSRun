@@ -58,9 +58,13 @@ development
 
 Here are some of the flags that you can pass to fsrun.
 
-### --list
+### --help
 
 Prints the help text for the tool.
+
+### --list
+
+Lists all the commands that can be run for the project
 
 ### --logs \<filepath>
 

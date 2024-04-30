@@ -21,27 +21,10 @@ type FSConfig = {
 }
 
 
-[<CLIMutable>]
-type FSCommandInterop = {
-    Name: string
-    Command: string
-    Args: ResizeArray<string>
-    Steps: ResizeArray<string>
-}
-
-
 type CommandValue =
     | SimpleCommand of string
     | StepsCommand of string list
-    | DetailedCommand of FSCommandInterop
-
-
-[<CLIMutable>]
-type FSConfigInterop = {
-    Environment: Dictionary<string, string>
-    Commands: Dictionary<string, CommandValue>
-}
-
+    | DetailedCommand of FSCommand
 
 let parseSimpleCommand (cmdLine: string) name =
     let regex = new Regex("""[ ](?=(?:[^""]*""[^""]*"")*[^""]*$)""")
@@ -50,18 +33,14 @@ let parseSimpleCommand (cmdLine: string) name =
 
 
 let rec findFile filePath =
-    if File.Exists(filePath) then
-        Some filePath
-    else
+    match File.Exists(filePath) with
+    | true -> Some filePath
+    | false ->
         let parentDirectory = Directory.GetParent(filePath)
-        if parentDirectory <> null then
-            let grandParentDirectory = parentDirectory.Parent
-            if grandParentDirectory <> null then
-                findFile (Path.Combine(grandParentDirectory.FullName, Path.GetFileName(filePath)))
-            else
-                None
-        else
-            None
+        let grandParentDirectory = if parentDirectory <> null then parentDirectory.Parent else null
+        if grandParentDirectory <> null then
+            findFile (Path.Combine(grandParentDirectory.FullName, Path.GetFileName(filePath)))
+        else None
 
 
 let fromFile filePath : FSConfig =
@@ -72,6 +51,7 @@ let fromFile filePath : FSConfig =
             System.Environment.Exit 1
             failwith "unreachable"
         )
+
     let file = File.ReadAllText file
     let configInterop = Toml.ToModel(file)
     let tomlEnv: IDictionary<string, obj> =  if configInterop.ContainsKey("environment") then configInterop["environment"] :?> IDictionary<string, obj> else new Dictionary<string, obj>()
@@ -89,13 +69,16 @@ let fromFile filePath : FSConfig =
                     let cmd = if tbl.ContainsKey("command") then tbl["command"] :?> string else ""
                     let args = if tbl.ContainsKey("args") then tbl["args"] :?> IList<obj> |> Seq.cast<string> |> List.ofSeq else []
                     let steps = if tbl.ContainsKey("steps") then tbl["steps"] :?> IList<obj> |> Seq.cast<string> |> List.ofSeq else []
-                    DetailedCommand { Name = name; Command = cmd; Args = args |> ResizeArray; Steps = steps |> ResizeArray }
+                    if cmd = "" then
+                        DetailedCommand { Name = name; Action = Command (cmd, args)}
+                    else
+                        DetailedCommand { Name = name; Action = Steps steps }
                 | _ -> failwith "Invalid command value"
             
             match commandValue with
             | SimpleCommand cmd -> parseSimpleCommand cmd name
             | StepsCommand steps -> { Name = name; Action = Steps steps }
-            | DetailedCommand cmd -> { Name = name; Action = Command (cmd.Command, cmd.Args |> List.ofSeq) }
+            | DetailedCommand cmd -> cmd
             
         ) |> List.ofSeq
 
