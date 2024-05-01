@@ -53,6 +53,7 @@ let getAction (results: ParseResults<CliCommand>)  =
     else
         PrintUsage
 
+
 let writeLog filePath text =
     if not (File.Exists(filePath)) then
         File.WriteAllText(filePath, text)
@@ -71,14 +72,16 @@ let rec runCommand (name: string) (config: Config.FSConfig) settings =
             |> List.map (fun step -> runCommand step config settings)
             |> List.fold (fun acc code -> if acc = 0 then code else acc) 0
         | Config.CommandAction.Command (cmd, args) ->
-            printfn $"""Running command: {cmd} {String.concat " " args}"""
             let result =
-                cli {
-                    Exec cmd
-                    Arguments args
-                    EnvironmentVariables (config.Environment |> Map.toList)
-                }
-                |> Command.execute
+                let comm =
+                    cli {
+                        Exec cmd
+                        Arguments args
+                        WorkingDirectory config.WorkingDirectory
+                        EnvironmentVariables (config.Environment |> Map.toList)
+                    }
+                comm |> Command.toString |> fun c -> printfn $"Running: %s{c}"
+                comm |> Command.execute
             if not (settings.Quiet) then
                 result |> Output.printText
                 result |> Output.printError
@@ -107,11 +110,11 @@ let performAction action (config: Config.FSConfig) (parser: ArgumentParser<CliCo
         runCommand settings.Command.Value config settings
 
 
-let parser = ArgumentParser.Create<CliCommand>(programName="fsrun")
 
 
 [<EntryPoint>]
 let main argv =
+    let parser = ArgumentParser.Create<CliCommand>(programName="fsrun")
     let results = parser.ParseCommandLine(argv, raiseOnUsage=false)
     let settings = parseSettings results
     let config = Config.fromFile settings.FileName

@@ -5,9 +5,11 @@ open System.IO
 open Tomlyn
 open System.Text.RegularExpressions
 
+
 type CommandAction =
     | Steps of string list
     | Command of cmd: string * args: string list
+
 
 type FSCommand = {
     Name: string
@@ -18,6 +20,7 @@ type FSCommand = {
 type FSConfig = {
     Environment: Map<string, string>
     Commands: FSCommand list
+    WorkingDirectory: string
 }
 
 
@@ -25,6 +28,7 @@ type CommandValue =
     | SimpleCommand of string
     | StepsCommand of string list
     | DetailedCommand of FSCommand
+
 
 let parseSimpleCommand (cmdLine: string) name =
     let regex = new Regex("""[ ](?=(?:[^""]*""[^""]*"")*[^""]*$)""")
@@ -34,19 +38,19 @@ let parseSimpleCommand (cmdLine: string) name =
 
 let rec findFile filePath =
     match File.Exists(filePath) with
-    | true -> Some filePath
+    | true -> Some filePath, filePath |> Path.GetDirectoryName
     | false ->
         let parentDirectory = Directory.GetParent(filePath)
         let grandParentDirectory = if parentDirectory <> null then parentDirectory.Parent else null
         if grandParentDirectory <> null then
             findFile (Path.Combine(grandParentDirectory.FullName, Path.GetFileName(filePath)))
-        else None
+        else None, ""
 
 
 let fromFile filePath : FSConfig =
-    let file =
-        findFile filePath
-        |> Option.defaultWith(fun() ->
+    let file, directory = findFile filePath
+    let file = 
+        file |> Option.defaultWith(fun() ->
             printfn $"File not found: {filePath}"
             System.Environment.Exit 1
             failwith "unreachable"
@@ -63,7 +67,7 @@ let fromFile filePath : FSConfig =
             let value = kvp.Value
             let commandValue = 
                 match value with
-                | :? string -> SimpleCommand ((string) value)
+                | :? string as s-> SimpleCommand s
                 | :? Model.TomlArray as arr -> StepsCommand (arr |> Seq.cast<string> |> List.ofSeq)
                 | :? Model.TomlTable as tbl -> 
                     let cmd = if tbl.ContainsKey("command") then tbl["command"] :?> string else ""
@@ -82,4 +86,4 @@ let fromFile filePath : FSConfig =
             
         ) |> List.ofSeq
 
-    { Environment = env; Commands = commands }
+    { Environment = env; Commands = commands; WorkingDirectory = directory}

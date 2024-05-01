@@ -9,6 +9,7 @@ build-project = ["clean", "build"]
 publish = "dotnet publish -r win-x64 -p:PublishSingleFile=true --self-contained true -p:TargetFramework=net8.0"
 publish-linux = "dotnet publish -r linux-x64 -p:PublishSingleFile=true --self-contained true -p:TargetFramework=net8.0"
 publish-mac = "dotnet publish -r osx-x64 -p:PublishSingleFile=true --self-contained true -p:TargetFramework=net8.0"
+install = "dotnet tool install --global --add-source ./nupkg fsrun"
 
 [commands.build]
 command = "dotnet"
