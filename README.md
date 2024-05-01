@@ -58,7 +58,7 @@ You can also set environment vars for an individual command.
 ```toml
 [commands.echo]
 command = "echo"
-args = "$VAR"
+args = ["$VAR"]
 environment = { VAR = "my variable" }
 ```
 
