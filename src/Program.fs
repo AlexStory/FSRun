@@ -76,14 +76,14 @@ let rec runCommand (name: string) (config: Config.FSConfig) settings =
             steps
             |> List.map (fun step -> runCommand step config settings)
             |> List.fold (fun acc code -> if acc = 0 then code else acc) 0
-        | Config.CommandAction.Command (cmd, args) ->
+        | Config.CommandAction.Command (program, args) ->
             let result =
                 let comm =
                     cli {
-                        Exec cmd
+                        Exec program
                         Arguments args
                         WorkingDirectory config.WorkingDirectory
-                        EnvironmentVariables (config.Environment |> Map.toList)
+                        EnvironmentVariables (config.Environment |> Map.toList |> List.append (cmd.Environment |> Map.toList))
                     }
                 comm |> Command.toString |> fun c -> printfn $"Running: %s{c}"
                 comm |> Command.execute

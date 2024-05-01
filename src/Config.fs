@@ -14,6 +14,7 @@ type CommandAction =
 type FSCommand = {
     Name: string
     Action: CommandAction
+    Environment: Map<string, string>
 }
 
 
@@ -33,7 +34,7 @@ type CommandValue =
 let parseSimpleCommand (cmdLine: string) name =
     let regex = new Regex("""[ ](?=(?:[^""]*""[^""]*"")*[^""]*$)""")
     let parts = regex.Split(cmdLine)
-    { Name = name; Action = Command (parts.[0], (parts.[1..] |> Array.toList)) }
+    { Name = name; Action = Command (parts.[0], (parts.[1..] |> Array.toList)); Environment = Map.empty }
 
 
 let rec findFile filePath =
@@ -73,15 +74,18 @@ let fromFile filePath : FSConfig =
                     let cmd = if tbl.ContainsKey("command") then tbl["command"] :?> string else ""
                     let args = if tbl.ContainsKey("args") then tbl["args"] :?> IList<obj> |> Seq.cast<string> |> List.ofSeq else []
                     let steps = if tbl.ContainsKey("steps") then tbl["steps"] :?> IList<obj> |> Seq.cast<string> |> List.ofSeq else []
+                    let cmdEnv = if tbl.ContainsKey("environment") then tbl["environment"] :?> IDictionary<string, obj> else new Dictionary<string, obj>()
+                    let cmdEnv = cmdEnv |> Seq.map (fun kvp -> kvp.Key, kvp.Value |> string) |> Map.ofSeq
+
                     if cmd = "" then
-                        DetailedCommand { Name = name; Action = Command (cmd, args)}
+                        DetailedCommand { Name = name; Action = Steps steps; Environment = cmdEnv}
                     else
-                        DetailedCommand { Name = name; Action = Steps steps }
+                        DetailedCommand { Name = name; Action = Command (cmd, args); Environment = cmdEnv}
                 | _ -> failwith "Invalid command value"
             
             match commandValue with
             | SimpleCommand cmd -> parseSimpleCommand cmd name
-            | StepsCommand steps -> { Name = name; Action = Steps steps }
+            | StepsCommand steps -> { Name = name; Action = Steps steps; Environment = Map.empty}
             | DetailedCommand cmd -> cmd
             
         ) |> List.ofSeq
