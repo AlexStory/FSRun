@@ -5,20 +5,22 @@ open System.IO
 
 
 type CliCommand =
-    | [<MainCommand; Unique>] Name of string
+    | [<MainCommand; Unique>] Command of string
     | [<AltCommandLine("-q")>] Quiet
     | List
     | Logs of path: string
     | [<AltCommandLine("-f")>] File of path: string
+    | Init
 
     interface IArgParserTemplate with
         member s.Usage =
             match s with
-            | Name name -> $"Name of the command to run"
+            | Command name -> $"Name of the command to run"
             | Quiet -> $"Don't print command's output"
             | List -> $"List all commands"
             | Logs path -> $"Log output to a file at the given path"
             | File path -> $"Path to the configuration file (default: fsrun.toml)"
+            | Init -> $"Initialize a new configuration file"
 
 
 // The action to take based on the command line arguments
@@ -26,6 +28,7 @@ type Action =
     | PrintUsage
     | ListCommands
     | RunCommand
+    | InitConfig
 
 
 type Settings = {
@@ -38,7 +41,7 @@ type Settings = {
 let parseSettings (results: ParseResults<CliCommand>) =
     let quiet = results.Contains Quiet
     let logPath = results.TryGetResult(Logs)
-    let command = results.TryGetResult(Name)
+    let command = results.TryGetResult(Command)
     let fileName = results.GetResult(File, "fsrun.toml")
     { Quiet = quiet; LogPath = logPath; Command = command; FileName = fileName}
 
@@ -48,7 +51,9 @@ let getAction (results: ParseResults<CliCommand>)  =
         PrintUsage
     else if results.Contains List then
         ListCommands
-    else if results.Contains Name then
+    else if results.Contains Init then
+        InitConfig
+    else if results.Contains Command then
         RunCommand
     else
         PrintUsage
@@ -96,6 +101,21 @@ let rec runCommand (name: string) (config: Config.FSConfig) settings =
         printf $"Command '{name}' not found\n"
         1
 
+let writeInitFile () =
+    let configPath = Path.Combine(Directory.GetCurrentDirectory(), "fsrun.toml")
+    if File.Exists(configPath) then
+        printf $"Configuration file already exists at {configPath}\n"
+        1
+    else
+        let defaultConfig = """[environment]
+
+[commands]
+greet = "echo Hello, world!"
+
+"""
+        File.WriteAllText(configPath, defaultConfig)
+        printf $"Configuration file created at {configPath}\n"
+        0
 
 let performAction action (config: Config.FSConfig) (parser: ArgumentParser<CliCommand>) settings =
     match action with
@@ -108,8 +128,8 @@ let performAction action (config: Config.FSConfig) (parser: ArgumentParser<CliCo
         0
     | RunCommand ->
         runCommand settings.Command.Value config settings
-
-
+    | InitConfig ->
+        writeInitFile ()
 
 
 [<EntryPoint>]

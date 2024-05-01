@@ -66,6 +66,10 @@ Prints the help text for the tool.
 
 Lists all the commands that can be run for the project
 
+### --init
+
+Initializes a basic config file
+
 ### --logs \<filepath>
 
 Will write all output logs to the specified file in append mode. Will create the file if it does not exist.
