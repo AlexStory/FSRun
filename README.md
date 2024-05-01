@@ -54,6 +54,14 @@ $ fsrun script
 development
 ```
 
+You can also set environment vars for an individual command.
+```toml
+[commands.echo]
+command = "echo"
+args = "$VAR"
+environment = { VAR = "my variable" }
+```
+
 ## Flags
 
 Here are some of the flags that you can pass to fsrun.
