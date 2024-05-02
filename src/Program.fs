@@ -38,25 +38,27 @@ type Settings = {
     FileName: string
 }
 
+
 let parseSettings (results: ParseResults<CliCommand>) =
     let quiet = results.Contains Quiet
     let logPath = results.TryGetResult(Logs)
     let command = results.TryGetResult(Command)
     let fileName = results.GetResult(File, "fsrun.toml")
-    { Quiet = quiet; LogPath = logPath; Command = command; FileName = fileName}
+
+    {
+        Quiet = quiet
+        LogPath = logPath
+        Command = command
+        FileName = fileName
+    }
 
 
-let getAction (results: ParseResults<CliCommand>)  =
-    if results.IsUsageRequested then
-        PrintUsage
-    else if results.Contains List then
-        ListCommands
-    else if results.Contains Init then
-        InitConfig
-    else if results.Contains Command then
-        RunCommand
-    else
-        PrintUsage
+let getAction (results: ParseResults<CliCommand>) =
+    if results.IsUsageRequested then PrintUsage
+    else if results.Contains List then ListCommands
+    else if results.Contains Init then InitConfig
+    else if results.Contains Command then RunCommand
+    else PrintUsage
 
 
 let writeLog filePath text =
@@ -76,66 +78,76 @@ let rec runCommand (name: string) (config: Config.FSConfig) settings =
             steps
             |> List.map (fun step -> runCommand step config settings)
             |> List.fold (fun acc code -> if acc = 0 then code else acc) 0
-        | Config.CommandAction.Command (program, args) ->
+        | Config.CommandAction.Command(program, args) ->
             let result =
                 let comm =
                     cli {
                         Exec program
                         Arguments args
                         WorkingDirectory config.WorkingDirectory
-                        EnvironmentVariables (config.Environment |> Map.toList |> List.append (cmd.Environment |> Map.toList))
+
+                        EnvironmentVariables(
+                            config.Environment |> Map.toList |> List.append (cmd.Environment |> Map.toList)
+                        )
                     }
-                comm |> Command.toString |> fun c -> printfn $"Running: %s{c}"
+
+                comm |> Command.toString |> (fun c -> printfn $"Running: %s{c}")
                 comm |> Command.execute
+
             if not (settings.Quiet) then
                 result |> Output.printText
                 result |> Output.printError
 
             if settings.LogPath.IsSome && result.Text.IsSome then
                 writeLog settings.LogPath.Value result.Text.Value
+
             if settings.LogPath.IsSome && result.Error.IsSome then
                 writeLog settings.LogPath.Value result.Error.Value
-            
+
             result |> Output.toExitCode
     | None ->
         printf $"Command '{name}' not found\n"
         1
 
+
 let writeInitFile () =
     let configPath = Path.Combine(Directory.GetCurrentDirectory(), "fsrun.toml")
+
     if File.Exists(configPath) then
         printf $"Configuration file already exists at {configPath}\n"
         1
     else
-        let defaultConfig = """[environment]
+        let defaultConfig =
+            """[environment]
 
 [commands]
 greet = "echo Hello, world!"
 
 """
+
         File.WriteAllText(configPath, defaultConfig)
         printf $"Configuration file created at {configPath}\n"
         0
 
+
 let performAction action (config: Config.FSConfig) (parser: ArgumentParser<CliCommand>) settings =
     match action with
-    | PrintUsage -> 
+    | PrintUsage ->
         printf $"{parser.PrintUsage()}\n"
         0
-    | ListCommands -> 
+    | ListCommands ->
         for cmd in config.Commands do
             printf $"- {cmd.Name}\n"
+
         0
-    | RunCommand ->
-        runCommand settings.Command.Value config settings
-    | InitConfig ->
-        writeInitFile ()
+    | RunCommand -> runCommand settings.Command.Value config settings
+    | InitConfig -> writeInitFile ()
 
 
 [<EntryPoint>]
 let main argv =
-    let parser = ArgumentParser.Create<CliCommand>(programName="fsrun")
-    let results = parser.ParseCommandLine(argv, raiseOnUsage=false)
+    let parser = ArgumentParser.Create<CliCommand>(programName = "fsrun")
+    let results = parser.ParseCommandLine(argv, raiseOnUsage = false)
     let settings = parseSettings results
     let config = Config.fromFile settings.FileName
     let action = getAction results
