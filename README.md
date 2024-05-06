@@ -62,6 +62,16 @@ args = ["$VAR"]
 environment = { VAR = "my variable" }
 ```
 
+The working directory to run a command from can be set much the same way. It can be set at the root level, or on a detailed command. With any setting, the value on a specific commad will take percedence over a global setting.
+
+```toml
+working_directory = "./src"
+
+[commands.list-packages]
+command = "ls"
+working-directory = "node_module"
+```
+
 ## Flags
 
 Here are some of the flags that you can pass to fsrun.

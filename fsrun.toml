@@ -15,3 +15,7 @@ install = "dotnet tool install --global --add-source ./nupkg fsrun"
 [commands.build]
 command = "dotnet"
 args = ["build"]
+
+[commands.where]
+command = "pwd"
+working_directory = "./src"

@@ -84,7 +84,7 @@ let rec runCommand (name: string) (config: Config.FSConfig) settings =
                     cli {
                         Exec program
                         Arguments args
-                        WorkingDirectory config.WorkingDirectory
+                        WorkingDirectory(cmd.WorkingDirectory |> Option.defaultValue config.WorkingDirectory)
 
                         EnvironmentVariables(
                             config.Environment |> Map.toList |> List.append (cmd.Environment |> Map.toList)
