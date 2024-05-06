@@ -72,6 +72,26 @@ command = "ls"
 working_directory = "node_module"
 ```
 
+## Toml Settings
+
+### Root Settings
+
+- `working_directory` - directory to run commands from. a string.
+
+- `[environment]` - a list of env variables to be loaded for all commands. `key = "value"`
+
+- `[commands]` - the list of commands to run. Can be in simple or detailed form. Simple follows the `name = "cmd args"` format. Detailed commands are described below.
+
+### Command Level Settings
+
+More detailed commands are set in tables with the format `[commands.name]` where `name` is the name of the command.
+
+- `command` - the command that you want to run. a string.
+- `args` - the list of arguments to pass to the command. a list of strings.
+- `[environment]` - key value pairs of values to be added to the environment for the command. a toml table.
+- `working_directory` - the directory from which to run the command. a string.
+
+
 ## Flags
 
 Here are some of the flags that you can pass to fsrun.
