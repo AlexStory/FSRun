@@ -69,7 +69,7 @@ working_directory = "./src"
 
 [commands.list-packages]
 command = "ls"
-working_directory = "node_module"
+working_directory = "./node_modules"
 ```
 
 ## Toml Settings
